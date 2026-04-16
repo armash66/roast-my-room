@@ -9,8 +9,9 @@ All responses are strict JSON. No markdown, no preamble, no exceptions.
 """
 
 import json
+import asyncio
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
 
 from google import genai
 from google.genai import types
@@ -127,6 +128,30 @@ class GeminiService:
         self.model = settings.gemini_model
         self.max_tokens = settings.gemini_max_tokens
 
+    async def _safe_generate_content(self, model: str, contents: Any, config: Any) -> Any:
+        """Wrapper for generate_content with exponential backoff for 503/429 errors."""
+        max_retries = 3
+        base_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                return await self.client.aio.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=config
+                )
+            except Exception as e:
+                # Catch 503 (Service Unavailable) or 429 (Resource Exhausted)
+                error_msg = str(e).lower()
+                is_transient = "503" in error_msg or "429" in error_msg or "unavailable" in error_msg or "high demand" in error_msg
+                
+                if is_transient and attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    logger.warning(f"Gemini API transient error: {error_msg}. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+
     # ─── Stage 1: Vision Analysis ────────────────────────
 
     async def analyze_image(self, image_data: bytes, media_type: str) -> VisionAnalysis:
@@ -136,7 +161,7 @@ class GeminiService:
         """
         for attempt in range(3):
             try:
-                response = await self.client.aio.models.generate_content(
+                response = await self._safe_generate_content(
                     model=self.model,
                     contents=[
                         types.Content(
@@ -206,7 +231,7 @@ class GeminiService:
 
         for attempt in range(3):
             try:
-                response = await self.client.aio.models.generate_content(
+                response = await self._safe_generate_content(
                     model=self.model,
                     contents=[
                         types.Content(
@@ -272,7 +297,7 @@ class GeminiService:
         )
 
         try:
-            response = await self.client.aio.models.generate_content(
+            response = await self._safe_generate_content(
                 model=self.model,
                 contents=[
                     types.Content(
@@ -407,7 +432,7 @@ Room 2 Roast: {roast2.model_dump_json()}
 Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reasoning".
 """
         try:
-            response = await self.client.aio.models.generate_content(
+            response = await self._safe_generate_content(
                 model=self.model,
                 contents=[
                     types.Content(

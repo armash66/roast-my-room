@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Gemini API
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-1.5-flash"
     gemini_max_tokens: int = 8192
     gemini_timeout: int = 60
 
