@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     debug: bool = False
     allowed_origins: str = "http://localhost:5173"
 
-    # Claude API
-    anthropic_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-20250514"
-    claude_max_tokens: int = 1024
-    claude_timeout: int = 60
+    # Gemini API
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_max_tokens: int = 1024
+    gemini_timeout: int = 60
 
     # Supabase
     supabase_url: str = ""

@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown hooks."""
     logger.info(f"🔥 {settings.app_name} starting up...")
     logger.info(f"   Debug mode: {settings.debug}")
-    logger.info(f"   Claude model: {settings.claude_model}")
+    logger.info(f"   Gemini model: {settings.gemini_model}")
     yield
     # Shutdown
     logger.info(f"🛑 {settings.app_name} shutting down...")

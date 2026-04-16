@@ -1,5 +1,5 @@
 """
-Claude AI Service — 3-Stage Roast Pipeline.
+Gemini AI Service — 3-Stage Roast Pipeline.
 
 Stage 1: Vision Analysis (structured object detection)
 Stage 2: Roast Generation (mode-aware, specific, funny)
@@ -9,11 +9,11 @@ All responses are strict JSON. No markdown, no preamble, no exceptions.
 """
 
 import json
-import base64
 import logging
 from typing import AsyncGenerator
 
-import anthropic
+from google import genai
+from google.genai import types
 
 from app.config import get_settings
 from app.models.schemas import (
@@ -115,19 +115,16 @@ Return ONLY valid JSON:
 }}"""
 
 
-class ClaudeService:
+class GeminiService:
     """
-    Handles all Claude API interactions with the 3-stage pipeline.
+    Handles all Gemini API interactions with the 3-stage pipeline.
     Fully async, with retry logic for invalid JSON.
     """
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
-            timeout=settings.claude_timeout,
-        )
-        self.model = settings.claude_model
-        self.max_tokens = settings.claude_max_tokens
+        self.client = genai.Client(api_key=settings.gemini_api_key)
+        self.model = settings.gemini_model
+        self.max_tokens = settings.gemini_max_tokens
 
     # ─── Stage 1: Vision Analysis ────────────────────────
 
@@ -136,37 +133,27 @@ class ClaudeService:
         Stage 1: Analyze the room image and extract structured data.
         Returns validated VisionAnalysis or raises on failure.
         """
-        b64_image = base64.b64encode(image_data).decode("utf-8")
-
         for attempt in range(3):
             try:
-                response = await self.client.messages.create(
+                response = await self.client.aio.models.generate_content(
                     model=self.model,
-                    max_tokens=self.max_tokens,
-                    system=STAGE_1_SYSTEM,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "image",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": media_type,
-                                        "data": b64_image,
-                                    },
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Analyze this room image. Return STRICT JSON only.",
-                                },
+                    contents=[
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_bytes(data=image_data, mime_type=media_type),
+                                types.Part.from_text("Analyze this room image. Return STRICT JSON only."),
                             ],
-                        }
+                        )
                     ],
+                    config=types.GenerateContentConfig(
+                        system_instruction=STAGE_1_SYSTEM,
+                        max_output_tokens=self.max_tokens,
+                        temperature=0.3,
+                    ),
                 )
 
-                raw_text = response.content[0].text.strip()
-                # Strip markdown code fences if Claude adds them anyway
+                raw_text = response.text.strip()
                 raw_text = self._strip_code_fences(raw_text)
 
                 data = json.loads(raw_text)
@@ -177,7 +164,7 @@ class ClaudeService:
             except json.JSONDecodeError as e:
                 logger.warning(f"Stage 1 JSON parse failed (attempt {attempt + 1}): {e}")
                 if attempt == 2:
-                    raise ValueError(f"Stage 1 failed after 3 attempts: invalid JSON from Claude") from e
+                    raise ValueError(f"Stage 1 failed after 3 attempts: invalid JSON from Gemini") from e
             except Exception as e:
                 logger.error(f"Stage 1 error (attempt {attempt + 1}): {e}")
                 if attempt == 2:
@@ -203,19 +190,26 @@ class ClaudeService:
 
         for attempt in range(3):
             try:
-                response = await self.client.messages.create(
+                response = await self.client.aio.models.generate_content(
                     model=self.model,
-                    max_tokens=self.max_tokens,
-                    system=system_prompt,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": f"Here is the room analysis:\n{analysis_json}\n\nGenerate the roast. Return STRICT JSON only.",
-                        }
+                    contents=[
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_text(
+                                    f"Here is the room analysis:\n{analysis_json}\n\nGenerate the roast. Return STRICT JSON only."
+                                ),
+                            ],
+                        )
                     ],
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        max_output_tokens=self.max_tokens,
+                        temperature=0.8,
+                    ),
                 )
 
-                raw_text = response.content[0].text.strip()
+                raw_text = response.text.strip()
                 raw_text = self._strip_code_fences(raw_text)
 
                 data = json.loads(raw_text)
@@ -226,7 +220,7 @@ class ClaudeService:
             except json.JSONDecodeError as e:
                 logger.warning(f"Stage 2 JSON parse failed (attempt {attempt + 1}): {e}")
                 if attempt == 2:
-                    raise ValueError("Stage 2 failed: invalid JSON from Claude") from e
+                    raise ValueError("Stage 2 failed: invalid JSON from Gemini") from e
             except Exception as e:
                 logger.error(f"Stage 2 error (attempt {attempt + 1}): {e}")
                 if attempt == 2:
@@ -251,8 +245,8 @@ class ClaudeService:
             logger.info("Stage 3: Local validation passed, skipping API call")
             return roast
 
-        # If local check fails, ask Claude to validate and fix
-        logger.info(f"Stage 3: Only {objects_referenced} objects referenced, running Claude validation")
+        # If local check fails, ask Gemini to validate and fix
+        logger.info(f"Stage 3: Only {objects_referenced} objects referenced, running Gemini validation")
 
         objects_str = ", ".join(analysis.objects[:10])
         validation_prompt = STAGE_3_VALIDATION_PROMPT.format(
@@ -261,16 +255,22 @@ class ClaudeService:
         )
 
         try:
-            response = await self.client.messages.create(
+            response = await self.client.aio.models.generate_content(
                 model=self.model,
-                max_tokens=self.max_tokens,
-                system="You are a quality validator. Return ONLY valid JSON.",
-                messages=[
-                    {"role": "user", "content": validation_prompt}
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(validation_prompt)],
+                    )
                 ],
+                config=types.GenerateContentConfig(
+                    system_instruction="You are a quality validator. Return ONLY valid JSON.",
+                    max_output_tokens=self.max_tokens,
+                    temperature=0.3,
+                ),
             )
 
-            raw_text = response.content[0].text.strip()
+            raw_text = response.text.strip()
             raw_text = self._strip_code_fences(raw_text)
             data = json.loads(raw_text)
             validated = RoastResult(**data)
@@ -389,13 +389,21 @@ Room 2 Roast: {roast2.model_dump_json()}
 Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reasoning".
 """
         try:
-            response = await self.client.messages.create(
+            response = await self.client.aio.models.generate_content(
                 model=self.model,
-                max_tokens=512,
-                system=BATTLE_SYSTEM,
-                messages=[{"role": "user", "content": battle_prompt}],
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(battle_prompt)],
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    system_instruction=BATTLE_SYSTEM,
+                    max_output_tokens=512,
+                    temperature=0.5,
+                ),
             )
-            raw_text = response.content[0].text.strip()
+            raw_text = response.text.strip()
             raw_text = self._strip_code_fences(raw_text)
             battle_data = json.loads(raw_text)
 
@@ -420,7 +428,7 @@ Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reaso
 
     @staticmethod
     def _strip_code_fences(text: str) -> str:
-        """Remove markdown code fences that Claude sometimes adds."""
+        """Remove markdown code fences that Gemini sometimes adds."""
         text = text.strip()
         if text.startswith("```json"):
             text = text[7:]
@@ -432,4 +440,4 @@ Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reaso
 
 
 # Singleton instance
-claude_service = ClaudeService()
+gemini_service = GeminiService()
