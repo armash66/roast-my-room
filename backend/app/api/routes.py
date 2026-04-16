@@ -18,7 +18,7 @@ from app.models.schemas import (
     LeaderboardItem,
     VoteRequest,
 )
-from app.services.claude_service import claude_service
+from app.services.gemini_service import gemini_service
 from app.services.supabase_service import supabase_service
 from app.middleware.rate_limit import rate_limiter
 from app.utils.image import validate_image, compress_image
@@ -81,7 +81,7 @@ async def create_roast(
     # Stream the response
     async def event_stream():
         try:
-            async for chunk in claude_service.run_pipeline_streaming(
+            async for chunk in gemini_service.run_pipeline_streaming(
                 compressed_data, media_type, roast_mode
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
@@ -145,7 +145,7 @@ async def create_roast_sync(
     compressed_data, media_type = compress_image(image_data)
 
     try:
-        analysis, roast = await claude_service.run_pipeline(
+        analysis, roast = await gemini_service.run_pipeline(
             compressed_data, media_type, roast_mode
         )
     except Exception as e:
@@ -214,7 +214,7 @@ async def create_battle(
     comp2, type2 = compress_image(img2_data)
 
     try:
-        result = await claude_service.run_battle(comp1, type1, comp2, type2, roast_mode)
+        result = await gemini_service.run_battle(comp1, type1, comp2, type2, roast_mode)
         return result
     except Exception as e:
         logger.error(f"Battle failed: {e}")
