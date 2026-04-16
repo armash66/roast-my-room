@@ -1,16 +1,14 @@
 /**
- * BattlePage — Room vs Room battle mode.
- * Upload two room images and see which one is worse.
+ * BattlePage — Room vs Room battle mode with premium layout.
  */
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Loader2 } from "lucide-react";
+import { Swords, Trophy, RotateCcw, Flame } from "lucide-react";
 import type { RoastMode, BattleResult } from "../types";
-import { createBattle, ApiError } from "../services/api";
+import { createBattle } from "../services/api";
 import { ImageUploader } from "../components/ImageUploader";
 import { ModeSelector } from "../components/ModeSelector";
-import { RoastDisplay } from "../components/RoastDisplay";
 import { ScoreBoard } from "../components/ScoreBoard";
 
 export function BattlePage() {
@@ -21,172 +19,169 @@ export function BattlePage() {
   const [result, setResult] = useState<BattleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startBattle = useCallback(async () => {
+  const handleBattle = useCallback(async () => {
     if (!image1 || !image2) return;
-
     setLoading(true);
     setError(null);
-    setResult(null);
-
     try {
-      const battleResult = await createBattle(image1, image2, mode);
-      setResult(battleResult);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Battle failed. Try again.");
-      }
+      const res = await createBattle(image1, image2, mode);
+      setResult(res);
+    } catch (e: any) {
+      setError(e.message || "Battle failed");
     } finally {
       setLoading(false);
     }
   }, [image1, image2, mode]);
 
+  const handleReset = () => {
+    setImage1(null);
+    setImage2(null);
+    setResult(null);
+    setError(null);
+  };
+
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="min-h-screen pt-28 pb-20 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+        {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl font-black text-white mb-3">
-            ⚔️ Room <span className="text-orange-500">Battle</span>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", bounce: 0.4 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                       bg-purple-500/[0.08] border border-purple-500/20 mb-6"
+          >
+            <Swords size={14} className="text-purple-400" />
+            <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">
+              Battle Mode
+            </span>
+          </motion.div>
+
+          <h1
+            className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-3"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Room vs Room
           </h1>
-          <p className="text-neutral-400 text-lg">
-            Two rooms enter. One gets destroyed more than the other.
+          <p className="text-neutral-500 max-w-md mx-auto">
+            Two rooms enter. One gets crowned the bigger disaster.
           </p>
         </motion.div>
 
-        {/* Upload zones */}
-        {!result && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ImageUploader
-                onImageSelect={setImage1}
-                disabled={loading}
-                label="Room 1"
-              />
-              <ImageUploader
-                onImageSelect={setImage2}
-                disabled={loading}
-                label="Room 2"
-              />
-            </div>
-
-            <ModeSelector selected={mode} onChange={setMode} disabled={loading} />
-
-            <motion.button
-              onClick={startBattle}
-              disabled={!image1 || !image2 || loading}
-              whileHover={image1 && image2 ? { scale: 1.02 } : {}}
-              whileTap={image1 && image2 ? { scale: 0.98 } : {}}
-              className={`
-                w-full py-4 rounded-xl font-bold text-lg transition-all duration-300
-                flex items-center justify-center gap-3
-                ${
-                  image1 && image2
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-600/25 cursor-pointer"
-                    : "bg-neutral-800 text-neutral-500 cursor-not-allowed"
-                }
-              `}
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={22} className="animate-spin" />
-                  Battling...
-                </>
-              ) : (
-                <>
-                  <Swords size={22} />
-                  Start Battle
-                </>
-              )}
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-8 p-6 bg-red-950/30 border border-red-900/50 rounded-2xl text-center"
-          >
-            <p className="text-red-400">{error}</p>
-          </motion.div>
-        )}
-
-        {/* Results */}
-        <AnimatePresence>
-          {result && (
+        <AnimatePresence mode="wait">
+          {!result ? (
             <motion.div
+              key="setup"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              {/* Two uploaders side-by-side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ImageUploader
+                  onImageSelect={setImage1}
+                  disabled={loading}
+                  label="Room 1"
+                />
+                <ImageUploader
+                  onImageSelect={setImage2}
+                  disabled={loading}
+                  label="Room 2"
+                />
+              </div>
+
+              <ModeSelector selected={mode} onChange={setMode} disabled={loading} />
+
+              <motion.button
+                onClick={handleBattle}
+                disabled={!image1 || !image2 || loading}
+                whileHover={image1 && image2 ? { scale: 1.02 } : {}}
+                whileTap={image1 && image2 ? { scale: 0.98 } : {}}
+                className={`
+                  w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3
+                  transition-all duration-500
+                  ${
+                    image1 && image2
+                      ? "btn-primary text-white shadow-[0_0_40px_rgba(249,115,22,0.2)]"
+                      : "bg-white/[0.04] text-neutral-600 border border-white/[0.06] cursor-not-allowed"
+                  }
+                `}
+              >
+                <span className="relative z-10 flex items-center gap-3">
+                  <Swords size={20} />
+                  {loading ? "Battling..." : "Start Battle"}
+                </span>
+              </motion.button>
+
+              {error && (
+                <p className="text-center text-red-400 text-sm">{error}</p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-8 space-y-8"
+              className="space-y-8"
             >
               {/* Winner banner */}
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", bounce: 0.4 }}
-                className="text-center p-8 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-2xl"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", bounce: 0.3 }}
+                className="text-center p-8 rounded-2xl bg-gradient-to-br from-orange-500/[0.08] to-red-500/[0.05]
+                           border border-orange-500/20"
               >
-                <p className="text-5xl mb-3">
-                  {result.winner === 1 ? "🏆" : "🏆"}
-                </p>
+                <Trophy size={40} className="text-orange-400 mx-auto mb-3" />
                 <h2 className="text-2xl font-black text-white mb-2">
-                  Room {result.winner} "Wins" (Loses Worse)
+                  Room {result.winner} is the Bigger Disaster
                 </h2>
-                <p className="text-neutral-400">{result.reasoning}</p>
+                <p className="text-neutral-400 text-sm max-w-md mx-auto">{result.reasoning}</p>
               </motion.div>
 
-              {/* Room roasts side by side */}
+              {/* Both roasts */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { roast: result.room1_roast, label: "Room 1", isWinner: result.winner === 1 },
-                  { roast: result.room2_roast, label: "Room 2", isWinner: result.winner === 2 },
-                ].map(({ roast, label, isWinner }) => (
-                  <div
-                    key={label}
-                    className={`space-y-4 p-4 rounded-2xl border ${
-                      isWinner ? "border-red-500/30 bg-red-950/10" : "border-neutral-800"
-                    }`}
+                {[result.room1_roast, result.room2_roast].map((roast, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.2 }}
+                    className={`rounded-2xl p-5 bg-white/[0.03] border relative
+                      ${result.winner === i + 1 ? "border-orange-500/30" : "border-white/[0.06]"}`}
                   >
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      {label}
-                      {isWinner && (
-                        <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full">
-                          WORSE
-                        </span>
-                      )}
+                    {result.winner === i + 1 && (
+                      <div className="absolute -top-3 -right-3 bg-orange-500 rounded-full p-1.5">
+                        <Flame size={14} className="text-white" />
+                      </div>
+                    )}
+                    <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+                      Room {i + 1}
                     </h3>
-                    <RoastDisplay
-                      text={roast.roast}
-                      worstOffender={roast.worst_offender}
-                      isStreaming={false}
-                    />
+                    <p className="text-neutral-300 text-sm leading-relaxed mb-4">{roast.roast}</p>
                     <ScoreBoard scores={roast.scores} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
               <div className="flex justify-center">
-                <button
-                  onClick={() => {
-                    setResult(null);
-                    setImage1(null);
-                    setImage2(null);
-                  }}
-                  className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-neutral-300 font-medium transition-colors"
+                <motion.button
+                  onClick={handleReset}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl
+                             bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06]
+                             text-neutral-400 font-medium text-sm transition-colors"
                 >
+                  <RotateCcw size={16} />
                   Battle Again
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           )}

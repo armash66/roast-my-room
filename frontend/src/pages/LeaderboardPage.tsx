@@ -1,10 +1,10 @@
 /**
- * LeaderboardPage — Top roasts ranked by votes.
+ * LeaderboardPage — Top roasts ranked by votes with premium styling.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ThumbsUp, ThumbsDown, Loader2 } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Trophy, ThumbsUp, ThumbsDown, Flame, AlertTriangle } from "lucide-react";
 import type { LeaderboardItem } from "../types";
 import { getLeaderboard, voteOnRoast } from "../services/api";
 
@@ -14,167 +14,141 @@ export function LeaderboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await getLeaderboard();
-        setItems(data);
-      } catch {
-        setError("Failed to load leaderboard. Supabase might not be configured.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    getLeaderboard()
+      .then(setItems)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleVote = useCallback(
-    async (roastId: string, direction: 1 | -1) => {
+    async (id: string, dir: "up" | "down") => {
       try {
-        await voteOnRoast(roastId, direction);
+        await voteOnRoast(id, dir);
         setItems((prev) =>
           prev.map((item) =>
-            item.id === roastId
-              ? { ...item, votes: item.votes + direction }
+            item.id === id
+              ? { ...item, votes: item.votes + (dir === "up" ? 1 : -1) }
               : item
           )
         );
-      } catch {
-        // Silent fail for votes
-      }
+      } catch {}
     },
     []
   );
 
-  const getMedal = (index: number) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return `#${index + 1}`;
-  };
+  const medals = ["🥇", "🥈", "🥉"];
+  const podiumBorders = [
+    "border-yellow-500/30",
+    "border-neutral-400/30",
+    "border-amber-700/30",
+  ];
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="min-h-screen pt-28 pb-20 px-4">
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl font-black text-white mb-3">
-            <Trophy className="inline-block mr-3 text-yellow-500" size={40} />
-            Hall of Shame
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                          bg-yellow-500/[0.08] border border-yellow-500/20 mb-6">
+            <Trophy size={14} className="text-yellow-400" />
+            <span className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">
+              Hall of Shame
+            </span>
+          </div>
+          <h1
+            className="text-4xl font-black text-white tracking-tight mb-2"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Top Roasts
           </h1>
-          <p className="text-neutral-400 text-lg">
-            The most devastatingly accurate roasts, ranked by the people.
-          </p>
+          <p className="text-neutral-500">The most upvoted disasters of all time.</p>
         </motion.div>
 
         {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 size={32} className="animate-spin text-orange-500" />
+          <div className="flex justify-center py-20">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <Flame size={28} className="text-orange-500" />
+            </motion.div>
           </div>
         )}
 
         {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-8 bg-neutral-900 border border-neutral-800 rounded-2xl text-center"
-          >
-            <p className="text-neutral-400 mb-2">{error}</p>
-            <p className="text-neutral-500 text-sm">
-              Set up Supabase to enable the leaderboard.
-            </p>
-          </motion.div>
+          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <p className="text-neutral-500">Connect Supabase to see the leaderboard</p>
+          </div>
         )}
 
         {!loading && !error && items.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-16 bg-neutral-900 border border-neutral-800 rounded-2xl text-center"
-          >
-            <p className="text-4xl mb-4">🏜️</p>
-            <p className="text-neutral-400 text-lg">No roasts on the leaderboard yet.</p>
-          </motion.div>
+          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <p className="text-neutral-500">No roasts on the board yet.</p>
+          </div>
         )}
 
-        <AnimatePresence>
-          <div className="space-y-4">
-            {items.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`
-                  bg-neutral-900 border rounded-2xl p-6 transition-colors
-                  ${
-                    index === 0
-                      ? "border-yellow-500/30 shadow-lg shadow-yellow-500/5"
-                      : index === 1
-                        ? "border-neutral-400/30"
-                        : index === 2
-                          ? "border-orange-800/30"
-                          : "border-neutral-800 hover:border-neutral-700"
-                  }
-                `}
-              >
-                <div className="flex items-start gap-4">
-                  {/* Rank */}
-                  <div className="text-2xl font-black text-center w-12 flex-shrink-0 pt-1">
-                    {getMedal(index)}
-                  </div>
+        <div className="space-y-3">
+          {items.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.4 }}
+              className={`rounded-2xl p-5 bg-white/[0.03] border
+                         hover:bg-white/[0.04] transition-colors duration-300
+                         ${i < 3 ? podiumBorders[i] : "border-white/[0.06]"}`}
+            >
+              <div className="flex items-start gap-4">
+                {/* Rank */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                  {i < 3 ? (
+                    <span className="text-xl">{medals[i]}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-neutral-500">#{i + 1}</span>
+                  )}
+                </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-neutral-300 mb-3 leading-relaxed">{item.roast}</p>
-                    <div className="flex items-center gap-4 text-sm flex-wrap">
-                      <span
-                        className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
-                          item.mode === "mild"
-                            ? "bg-yellow-500/10 text-yellow-400"
-                            : item.mode === "brutal"
-                              ? "bg-red-500/10 text-red-400"
-                              : "bg-purple-500/10 text-purple-400"
-                        }`}
-                      >
-                        {item.mode}
-                      </span>
-                      <span className="text-neutral-500">
-                        ☠️ {item.scores.overall_disaster}/10
-                      </span>
-                      <span className="text-red-400 text-xs font-medium">
-                        ⚠️ {item.worst_offender}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Voting */}
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => handleVote(item.id, 1)}
-                      className="p-1.5 rounded-lg hover:bg-green-500/10 text-neutral-500 hover:text-green-400 transition-colors"
-                      aria-label="Upvote"
-                    >
-                      <ThumbsUp size={16} />
-                    </button>
-                    <span className="text-sm font-bold text-neutral-400 tabular-nums">
-                      {item.votes}
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-neutral-300 text-sm leading-relaxed mb-2 line-clamp-2">
+                    {item.roast_text}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-neutral-600">
+                    <span className="text-orange-400 font-semibold">💥 {item.overall_disaster}/10</span>
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle size={10} className="text-red-400" />
+                      <span className="text-red-400">{item.worst_offender}</span>
                     </span>
-                    <button
-                      onClick={() => handleVote(item.id, -1)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition-colors"
-                      aria-label="Downvote"
-                    >
-                      <ThumbsDown size={16} />
-                    </button>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </AnimatePresence>
+
+                {/* Votes */}
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <motion.button
+                    onClick={() => handleVote(item.id, "up")}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-1.5 rounded-lg hover:bg-green-500/10 text-neutral-500 hover:text-green-400 transition-colors"
+                  >
+                    <ThumbsUp size={14} />
+                  </motion.button>
+                  <span className="text-sm font-bold text-white tabular-nums">{item.votes}</span>
+                  <motion.button
+                    onClick={() => handleVote(item.id, "down")}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition-colors"
+                  >
+                    <ThumbsDown size={14} />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );
