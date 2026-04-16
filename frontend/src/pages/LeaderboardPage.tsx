@@ -1,10 +1,9 @@
 /**
- * LeaderboardPage — Top roasts ranked by votes with premium styling.
+ * LeaderboardPage — Brutalist Hall of Shame
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Trophy, ThumbsUp, ThumbsDown, Flame, AlertTriangle } from "lucide-react";
+import { ThumbsUp, ThumbsDown, AlertTriangle } from "lucide-react";
 import type { LeaderboardItem } from "../types";
 import { getLeaderboard, voteOnRoast } from "../services/api";
 
@@ -23,11 +22,12 @@ export function LeaderboardPage() {
   const handleVote = useCallback(
     async (id: string, dir: "up" | "down") => {
       try {
-        await voteOnRoast(id, dir);
+        const val = dir === "up" ? 1 : -1;
+        await voteOnRoast(id, val);
         setItems((prev) =>
           prev.map((item) =>
             item.id === id
-              ? { ...item, votes: item.votes + (dir === "up" ? 1 : -1) }
+              ? { ...item, votes: item.votes + val }
               : item
           )
         );
@@ -36,117 +36,85 @@ export function LeaderboardPage() {
     []
   );
 
-  const medals = ["🥇", "🥈", "🥉"];
-  const podiumBorders = [
-    "border-yellow-500/30",
-    "border-neutral-400/30",
-    "border-amber-700/30",
-  ];
-
   return (
-    <div className="min-h-screen pt-28 pb-20 px-4">
+    <div className="min-h-screen pt-16 pb-20 px-6">
       <div className="max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-                          bg-yellow-500/[0.08] border border-yellow-500/20 mb-6">
-            <Trophy size={14} className="text-yellow-400" />
-            <span className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">
-              Hall of Shame
-            </span>
+        <div className="mb-12">
+          <div className="inline-block border-2 border-black bg-[#ffcc00] px-3 py-1 mb-6 font-bold uppercase text-xs">
+            PUBLIC DATABASE
           </div>
-          <h1
-            className="text-4xl font-black text-white tracking-tight mb-2"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Top Roasts
+          <h1 className="text-5xl font-black title-brutal mb-2 uppercase">
+            HALL OF SHAME
           </h1>
-          <p className="text-neutral-500">The most upvoted disasters of all time.</p>
-        </motion.div>
+          <p className="font-mono text-xl text-gray-700">
+            THE HIGHEST RATED ATROCITIES.
+          </p>
+        </div>
 
         {loading && (
-          <div className="flex justify-center py-20">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <Flame size={28} className="text-orange-500" />
-            </motion.div>
+          <div className="font-mono font-bold text-lg animate-pulse uppercase border-l-4 border-black pl-4">
+            FETCHING DATA...
           </div>
         )}
 
         {error && (
-          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <p className="text-neutral-500">Connect Supabase to see the leaderboard</p>
+          <div className="border-4 border-black p-6 bg-[#ffcc00] shadow-[8px_8px_0px_0px_#111]">
+            <p className="font-bold uppercase mb-2">SUPABASE ARCHIVE OFFLINE</p>
+            <p className="font-mono text-sm">DATABASE CONNECTION REQUIRED TO VIEW LEADERBOARD.</p>
           </div>
         )}
 
         {!loading && !error && items.length === 0 && (
-          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <p className="text-neutral-500">No roasts on the board yet.</p>
+          <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_#111]">
+            <p className="font-bold uppercase">NO DATA FOUND.</p>
+            <p className="font-mono text-sm text-gray-600">THE LEADERBOARD IS CURRENTLY EMPTY.</p>
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-6">
           {items.map((item, i) => (
-            <motion.div
+            <div
               key={item.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-              className={`rounded-2xl p-5 bg-white/[0.03] border
-                         hover:bg-white/[0.04] transition-colors duration-300
-                         ${i < 3 ? podiumBorders[i] : "border-white/[0.06]"}`}
+              className={`flex flex-col sm:flex-row items-stretch border-4 border-black bg-white shadow-[6px_6px_0px_0px_#111] transition-transform ${
+                i === 0 ? "bg-[#ffcc00] shadow-[8px_8px_0px_0px_#ff3b30]" : i === 1 ? "bg-gray-200" : ""
+              }`}
             >
-              <div className="flex items-start gap-4">
-                {/* Rank */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center">
-                  {i < 3 ? (
-                    <span className="text-xl">{medals[i]}</span>
-                  ) : (
-                    <span className="text-sm font-bold text-neutral-500">#{i + 1}</span>
-                  )}
-                </div>
+              {/* Rank */}
+              <div className="flex sm:flex-col items-center justify-center p-4 border-b-4 sm:border-b-0 sm:border-r-4 border-black bg-black text-white font-black text-3xl min-w-[80px]">
+                #{i + 1}
+              </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-neutral-300 text-sm leading-relaxed mb-2 line-clamp-2">
-                    {item.roast_text}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-neutral-600">
-                    <span className="text-orange-400 font-semibold">💥 {item.overall_disaster}/10</span>
-                    <span className="flex items-center gap-1">
-                      <AlertTriangle size={10} className="text-red-400" />
-                      <span className="text-red-400">{item.worst_offender}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Votes */}
-                <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                  <motion.button
-                    onClick={() => handleVote(item.id, "up")}
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1.5 rounded-lg hover:bg-green-500/10 text-neutral-500 hover:text-green-400 transition-colors"
-                  >
-                    <ThumbsUp size={14} />
-                  </motion.button>
-                  <span className="text-sm font-bold text-white tabular-nums">{item.votes}</span>
-                  <motion.button
-                    onClick={() => handleVote(item.id, "down")}
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition-colors"
-                  >
-                    <ThumbsDown size={14} />
-                  </motion.button>
+              {/* Content */}
+              <div className="flex-1 p-6">
+                <p className="text-lg font-bold leading-relaxed mb-4">{item.roast}</p>
+                <div className="flex flex-wrap items-center gap-4 border-t-2 border-black pt-4 mt-4">
+                  <span className="font-mono font-bold text-sm bg-black text-[#b2ff05] px-2 py-1">
+                    DAMAGE: {item.scores.overall_disaster}/10
+                  </span>
+                  <span className="flex items-center gap-1 font-mono text-sm font-bold uppercase text-[#ff3b30]">
+                    <AlertTriangle size={14} strokeWidth={3} />
+                    CRITICAL: {item.worst_offender}
+                  </span>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Votes */}
+              <div className="flex sm:flex-col items-center justify-center gap-4 p-4 border-t-4 sm:border-t-0 sm:border-l-4 border-black bg-white">
+                <button
+                  onClick={() => handleVote(item.id, "up")}
+                  className="p-2 border-2 border-black hover:bg-[#b2ff05] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                >
+                  <ThumbsUp size={20} strokeWidth={3} className="text-black" />
+                </button>
+                <span className="font-black text-2xl">{item.votes}</span>
+                <button
+                  onClick={() => handleVote(item.id, "down")}
+                  className="p-2 border-2 border-black hover:bg-[#ff3b30] hover:text-white hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                >
+                  <ThumbsDown size={20} strokeWidth={3} className="text-black" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>

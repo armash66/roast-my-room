@@ -1,11 +1,10 @@
 /**
- * App — Root with particle effects and smooth page transitions.
+ * App — Root of the Neo-Brutalist application.
  */
 
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Navbar } from "./components/Navbar";
-import { ParticleField } from "./components/ParticleField";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { HomePage } from "./pages/HomePage";
 import { BattlePage } from "./pages/BattlePage";
@@ -19,10 +18,10 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <motion.div
         key={location.pathname}
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2, ease: "circOut" }}
       >
         <Routes location={location}>
           <Route path="/" element={<HomePage />} />
@@ -40,7 +39,6 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <div className="relative min-h-screen">
-          <ParticleField />
           <Navbar />
           <main className="relative z-10">
             <AnimatedRoutes />

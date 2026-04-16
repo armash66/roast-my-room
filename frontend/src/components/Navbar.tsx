@@ -1,8 +1,7 @@
 /**
- * Navbar — Premium glassmorphism navigation with animated indicators.
+ * Navbar — Brutalist Top Bar
  */
 
-import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { Flame, Clock, Trophy, Swords } from "lucide-react";
 
@@ -10,76 +9,50 @@ const navLinks = [
   { path: "/", label: "Roast", icon: Flame },
   { path: "/battle", label: "Battle", icon: Swords },
   { path: "/history", label: "History", icon: Clock },
-  { path: "/leaderboard", label: "Top Roasts", icon: Trophy },
+  { path: "/leaderboard", label: "Top Rank", icon: Trophy },
 ];
 
 export function Navbar() {
   const location = useLocation();
 
   return (
-    <motion.nav
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-3xl"
-    >
-      <div className="glass-strong rounded-2xl px-4 sm:px-6 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <motion.div
-              whileHover={{ rotate: [0, -15, 15, 0], scale: 1.1 }}
-              transition={{ duration: 0.5 }}
-              className="relative"
-            >
-              <Flame size={26} className="text-orange-500" />
-              <div className="absolute inset-0 blur-lg bg-orange-500/30 rounded-full" />
-            </motion.div>
-            <span
-              className="text-lg font-extrabold tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              <span className="text-white">Roast</span>
-              <span className="text-gradient">My</span>
-              <span className="text-white">Room</span>
-            </span>
-          </Link>
-
-          {/* Nav links */}
-          <div className="flex items-center gap-0.5">
-            {navLinks.map(({ path, label, icon: Icon }) => {
-              const isActive = location.pathname === path;
-
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  className="relative px-3 py-2 rounded-xl"
-                >
-                  <motion.div
-                    className={`
-                      flex items-center gap-2 text-sm font-medium relative z-10
-                      transition-colors duration-200
-                      ${isActive ? "text-orange-400" : "text-neutral-400 hover:text-neutral-200"}
-                    `}
-                  >
-                    <Icon size={15} />
-                    <span className="hidden sm:inline">{label}</span>
-                  </motion.div>
-
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      className="absolute inset-0 bg-white/[0.06] rounded-xl border border-white/[0.08]"
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                    />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+    <nav className="w-full bg-white border-b-4 border-black px-6 py-4 flex items-center justify-between shadow-[0px_4px_0px_0px_rgba(17,17,17,1)] sticky top-0 z-50">
+      
+      {/* Brutalist Logo */}
+      <Link to="/" className="flex items-center gap-2 group">
+        <div className="bg-black text-[#b2ff05] p-2 border-2 border-black">
+          <Flame size={20} strokeWidth={3} />
         </div>
+        <span className="text-xl font-black title-brutal tracking-tighter">
+          ROAST_MY_ROOM
+        </span>
+      </Link>
+
+      {/* Nav Links */}
+      <div className="flex items-center gap-3">
+        {navLinks.map(({ path, label, icon: Icon }) => {
+          const isActive = location.pathname === path;
+
+          return (
+            <Link
+              key={path}
+              to={path}
+              className={`
+                flex items-center gap-2 px-3 py-2 font-mono text-sm font-bold uppercase
+                border-2 transition-all
+                ${
+                  isActive
+                    ? "bg-[#b2ff05] border-black shadow-[2px_2px_0px_0px_#111] translate-x-[-2px] translate-y-[-2px]"
+                    : "bg-white border-transparent text-gray-500 hover:border-black hover:text-black"
+                }
+              `}
+            >
+              <Icon size={16} strokeWidth={isActive ? 3 : 2} />
+              <span className="hidden sm:inline">{label}</span>
+            </Link>
+          );
+        })}
       </div>
-    </motion.nav>
+    </nav>
   );
 }

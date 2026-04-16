@@ -1,8 +1,7 @@
 /**
- * RoastDisplay — Dramatic roast text reveal with typewriter cursor and worst offender callout.
+ * RoastDisplay — Brutalist Printout
  */
 
-import { motion } from "framer-motion";
 import { AlertTriangle, Quote } from "lucide-react";
 
 interface RoastDisplayProps {
@@ -21,7 +20,7 @@ export function RoastDisplay({ text, worstOffender, isStreaming }: RoastDisplayP
 
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <span key={i} className="text-red-400 font-bold underline decoration-red-500/50 underline-offset-2">
+        <span key={i} className="bg-[#ff3b30] text-white px-1 font-bold">
           {part}
         </span>
       ) : (
@@ -31,46 +30,37 @@ export function RoastDisplay({ text, worstOffender, isStreaming }: RoastDisplayP
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-4"
-    >
-      {/* Roast text card */}
-      <div className="relative rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06]">
-        <Quote size={20} className="text-orange-500/30 mb-3" />
-        <p className="text-neutral-200 text-lg leading-relaxed font-medium">
+    <div className="space-y-6 mt-8">
+      {/* Roast text box */}
+      <div className="brutal-box p-6 bg-white relative">
+        <div className="absolute top-0 right-0 bg-black text-[#b2ff05] px-2 py-1 text-xs font-mono font-bold border-l-2 border-b-2 border-black">
+          ROAST_OUTPUT
+        </div>
+        
+        <Quote size={28} className="text-black mb-4" strokeWidth={3} />
+        
+        <p className="text-xl font-bold leading-relaxed">
           {renderText()}
           {isStreaming && (
-            <motion.span
-              animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              className="inline-block w-0.5 h-5 bg-orange-500 ml-1 align-middle"
-            />
+            <span className="inline-block w-3 h-5 bg-[#b2ff05] border border-black ml-2 align-middle animate-pulse" />
           )}
         </p>
       </div>
 
       {/* Worst offender callout */}
       {worstOffender && (
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="flex items-start gap-3 p-4 rounded-xl bg-red-500/[0.06] border border-red-500/[0.12]"
-        >
-          <div className="p-1.5 rounded-lg bg-red-500/10 mt-0.5">
-            <AlertTriangle size={16} className="text-red-400" />
+        <div className="flex items-start gap-4 p-4 border-2 border-black bg-[#ffcc00] shadow-[4px_4px_0px_0px_#111]">
+          <div className="p-2 border-2 border-black bg-white">
+            <AlertTriangle size={24} strokeWidth={3} className="text-black" />
           </div>
           <div>
-            <p className="text-[11px] font-semibold text-red-400/70 uppercase tracking-wider mb-0.5">
-              Worst Offender
+            <p className="text-xs font-black uppercase tracking-widest mb-1">
+              Critical Offense Identified
             </p>
-            <p className="text-red-300 font-bold text-sm">{worstOffender}</p>
+            <p className="font-bold text-lg">{worstOffender}</p>
           </div>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

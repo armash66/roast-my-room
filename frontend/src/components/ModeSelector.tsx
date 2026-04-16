@@ -1,8 +1,7 @@
 /**
- * ModeSelector — Premium mode selector with animated glow rings.
+ * ModeSelector — Brutalist Radio Buttons
  */
 
-import { motion } from "framer-motion";
 import type { RoastMode } from "../types";
 
 interface ModeSelectorProps {
@@ -11,95 +10,47 @@ interface ModeSelectorProps {
   disabled?: boolean;
 }
 
-const modes: { value: RoastMode; label: string; emoji: string; tag: string }[] = [
-  { value: "mild",     label: "Mild",     emoji: "😏", tag: "playful sarcasm" },
-  { value: "brutal",   label: "Brutal",   emoji: "💀", tag: "no mercy" },
-  { value: "unhinged", label: "Unhinged", emoji: "🤯", tag: "pure chaos" },
+const modes: { value: RoastMode; label: string; tag: string }[] = [
+  { value: "mild",     label: "MILD",     tag: "(PLAYFUL)" },
+  { value: "brutal",   label: "BRUTAL",   tag: "(NO MERCY)" },
+  { value: "unhinged", label: "UNHINGED", tag: "(CHAOS)" },
 ];
-
-const modeStyles: Record<RoastMode, { gradient: string; glow: string; border: string }> = {
-  mild: {
-    gradient: "from-amber-500/20 to-yellow-500/10",
-    glow: "shadow-[0_0_30px_rgba(234,179,8,0.15)]",
-    border: "border-amber-500/30",
-  },
-  brutal: {
-    gradient: "from-red-500/20 to-rose-500/10",
-    glow: "shadow-[0_0_30px_rgba(239,68,68,0.15)]",
-    border: "border-red-500/30",
-  },
-  unhinged: {
-    gradient: "from-purple-500/20 to-pink-500/10",
-    glow: "shadow-[0_0_30px_rgba(168,85,247,0.15)]",
-    border: "border-purple-500/30",
-  },
-};
 
 export function ModeSelector({ selected, onChange, disabled }: ModeSelectorProps) {
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-neutral-500 mb-3 uppercase tracking-wider">
-        Roast Intensity
-      </label>
+      <div className="font-bold border-b-2 border-black inline-block mb-3 uppercase text-sm tracking-wide">
+        INTENSITY.LEVEL
+      </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {modes.map((mode) => {
           const isSelected = selected === mode.value;
-          const style = modeStyles[mode.value];
 
           return (
-            <motion.button
+            <button
               key={mode.value}
               onClick={() => onChange(mode.value)}
               disabled={disabled}
-              whileHover={!disabled ? { scale: 1.04, y: -2 } : {}}
-              whileTap={!disabled ? { scale: 0.97 } : {}}
               className={`
-                relative overflow-hidden rounded-xl p-5 border transition-all duration-500
-                ${
-                  isSelected
-                    ? `${style.border} ${style.glow} bg-white/[0.04]`
-                    : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"
-                }
+                border-2 border-black p-4 text-left font-mono transition-none
+                ${isSelected ? "bg-black text-white translate-x-[2px] translate-y-[2px]" : "bg-white text-black hover:bg-gray-100 shadow-[4px_4px_0px_0px_#111]"}
                 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
               `}
             >
-              {/* Background gradient */}
-              <AnimatedBg isActive={isSelected} gradient={style.gradient} />
-
-              <div className="relative z-10 flex flex-col items-center gap-2">
-                <motion.span
-                  className="text-3xl"
-                  animate={isSelected ? { scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] } : { scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {mode.emoji}
-                </motion.span>
-                <span className={`font-bold text-sm ${isSelected ? "text-white" : "text-neutral-400"}`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`font-black text-lg ${isSelected ? "text-[#b2ff05]" : ""}`}>
                   {mode.label}
                 </span>
-                <span className="text-[11px] text-neutral-600 font-medium uppercase tracking-wider">
-                  {mode.tag}
-                </span>
+                {isSelected && (
+                  <div className="w-3 h-3 bg-[#b2ff05] rounded-none border border-black animate-pulse" />
+                )}
               </div>
-            </motion.button>
+              <span className="text-xs font-bold block">{mode.tag}</span>
+            </button>
           );
         })}
       </div>
     </div>
-  );
-}
-
-function AnimatedBg({ isActive, gradient }: { isActive: boolean; gradient: string }) {
-  if (!isActive) return null;
-  return (
-    <motion.div
-      layoutId="mode-glow"
-      className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-    />
   );
 }

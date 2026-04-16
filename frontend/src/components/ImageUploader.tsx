@@ -1,27 +1,23 @@
 /**
- * ImageUploader — Premium drag & drop with 3D tilt and glow effects.
+ * ImageUploader — Brutalist Upload Target
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, ImageIcon, Sparkles } from "lucide-react";
+import { Upload, X, FileImage } from "lucide-react";
 
 interface ImageUploaderProps {
   onImageSelect: (file: File) => void;
   disabled?: boolean;
-  label?: string;
 }
 
 export function ImageUploader({
   onImageSelect,
   disabled = false,
-  label,
 }: ImageUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -42,21 +38,6 @@ export function ImageUploader({
     setFileName("");
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!cardRef.current || disabled) return;
-      const rect = cardRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      setTilt({ x: y * -8, y: x * 8 });
-    },
-    [disabled]
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    setTilt({ x: 0, y: 0 });
-  }, []);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -71,80 +52,46 @@ export function ImageUploader({
 
   return (
     <div className="w-full">
-      {label && (
-        <label className="block text-sm font-medium text-neutral-500 mb-2 uppercase tracking-wider">
-          {label}
-        </label>
-      )}
+      <div className="font-bold border-b-2 border-black inline-block mb-3 uppercase text-sm tracking-wide">
+        TARGET.IMAGE_FILE
+      </div>
 
-      <motion.div
-        ref={cardRef}
+      <div
         {...getRootProps()}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        animate={{
-          rotateX: tilt.x,
-          rotateY: tilt.y,
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        style={{ transformStyle: "preserve-3d", perspective: 1000 }}
         className={`
-          relative overflow-hidden rounded-2xl border transition-all duration-500 cursor-pointer
-          ${
-            isDragActive
-              ? "border-orange-500/50 bg-orange-500/5 glow-orange"
-              : preview
-                ? "border-white/[0.08] bg-white/[0.02]"
-                : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
-          }
+          brutal-box relative overflow-hidden cursor-pointer transition-none min-h-[200px]
+          flex flex-col items-center justify-center
+          ${isDragActive ? "bg-[#b2ff05] shadow-[inset_4px_4px_0px_#111]" : "bg-white"}
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
         <input {...getInputProps()} id="image-upload" />
 
-        {/* Animated border glow on drag */}
-        {isDragActive && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 rounded-2xl gradient-border pointer-events-none"
-          />
-        )}
-
         <AnimatePresence mode="wait">
           {preview ? (
             <motion.div
               key="preview"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="relative aspect-video"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="relative w-full aspect-video"
             >
               <img
                 src={preview}
-                alt="Room preview"
-                className="w-full h-full object-cover rounded-2xl"
+                alt="Room target"
+                className="w-full h-full object-cover border-b-2 border-black"
+                style={{ imageRendering: "pixelated" }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent rounded-2xl" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-orange-400" />
-                  <span className="text-sm text-white/80 truncate max-w-[200px] font-medium">
-                    {fileName}
-                  </span>
-                </div>
-                <motion.button
-                  onClick={clearImage}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 rounded-full bg-white/10 hover:bg-red-500/80 backdrop-blur-sm
-                             border border-white/10 transition-colors duration-200"
-                  aria-label="Remove image"
-                >
-                  <X size={14} className="text-white" />
-                </motion.button>
+              <div className="absolute top-0 left-0 bg-black text-white px-2 py-1 font-mono text-xs border-r-2 border-b-2 border-black">
+                {fileName}
               </div>
+              <button
+                onClick={clearImage}
+                className="absolute top-2 right-2 bg-[#ff3b30] border-2 border-black p-1 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform text-white"
+                title="Clear target"
+              >
+                <X size={20} strokeWidth={3} />
+              </button>
             </motion.div>
           ) : (
             <motion.div
@@ -152,39 +99,21 @@ export function ImageUploader({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20 px-6"
+              className="flex flex-col items-center justify-center py-12 px-6"
             >
-              <motion.div
-                animate={
-                  isDragActive
-                    ? { y: -8, scale: 1.15, rotate: 5 }
-                    : { y: [0, -6, 0], scale: 1 }
-                }
-                transition={
-                  isDragActive
-                    ? { type: "spring", stiffness: 300 }
-                    : { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                }
-                className="relative mb-5"
-              >
-                {isDragActive ? (
-                  <ImageIcon size={52} className="text-orange-400" />
-                ) : (
-                  <Upload size={52} className="text-neutral-600" />
-                )}
-                <div className="absolute inset-0 blur-2xl bg-orange-500/10 rounded-full scale-150" />
-              </motion.div>
-
-              <p className="text-neutral-300 font-semibold text-lg mb-1.5">
-                {isDragActive ? "Drop it like it's hot 🔥" : "Drop your room photo"}
+              <div className="border-4 border-black p-4 mb-4 bg-white shadow-[4px_4px_0px_0px_#111]">
+                {isDragActive ? <FileImage size={48} /> : <Upload size={48} />}
+              </div>
+              <p className="font-black text-xl uppercase mb-1">
+                {isDragActive ? "CONFIRM TARGET" : "SELECT TARGET IMAGE"}
               </p>
-              <p className="text-neutral-600 text-sm">
-                click to browse • JPG, PNG, WebP • Max 10MB
+              <p className="font-mono text-gray-500 text-sm">
+                [DRAG & DROP OR CLICK] MAX: 10MB
               </p>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 }

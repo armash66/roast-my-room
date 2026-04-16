@@ -1,10 +1,9 @@
 /**
- * HistoryPage — Past roasts displayed in a premium card layout.
+ * HistoryPage — Brutalist Past Roasts
  */
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Clock, Flame, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { HistoryItem } from "../types";
 import { getHistory } from "../services/api";
 
@@ -21,86 +20,75 @@ export function HistoryPage() {
   }, []);
 
   const modeColors: Record<string, string> = {
-    mild: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-    brutal: "text-red-400 bg-red-500/10 border-red-500/20",
-    unhinged: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+    mild: "bg-[#ffcc00] text-black",
+    brutal: "bg-[#ff3b30] text-white",
+    unhinged: "bg-black text-[#b2ff05]",
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-4">
+    <div className="min-h-screen pt-16 pb-20 px-6">
       <div className="max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-                          bg-blue-500/[0.08] border border-blue-500/20 mb-6">
-            <Clock size={14} className="text-blue-400" />
-            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
-              Your History
-            </span>
+        <div className="mb-12">
+          <div className="inline-block border-2 border-black bg-white px-3 py-1 mb-6 font-bold uppercase text-xs">
+            DATA LOGS / ARCHIVE
           </div>
-          <h1
-            className="text-4xl font-black text-white tracking-tight mb-2"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Past Roasts
+          <h1 className="text-5xl font-black title-brutal mb-2 uppercase">
+            PAST ROASTS
           </h1>
-          <p className="text-neutral-500">Your complete record of shame.</p>
-        </motion.div>
+          <p className="font-mono text-xl text-gray-700">
+            A PERMANENT RECORD OF YOUR POOR TASTE.
+          </p>
+        </div>
 
         {loading && (
-          <div className="flex justify-center py-20">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <Flame size={28} className="text-orange-500" />
-            </motion.div>
+          <div className="font-mono font-bold text-lg animate-pulse uppercase border-l-4 border-black pl-4">
+            FETCHING DATA...
           </div>
         )}
 
         {error && (
-          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <p className="text-neutral-500">Connect Supabase to see your history</p>
+          <div className="border-4 border-black p-6 bg-[#ffcc00] shadow-[8px_8px_0px_0px_#111]">
+            <p className="font-bold uppercase mb-2">SUPABASE ARCHIVE OFFLINE</p>
+            <p className="font-mono text-sm">DATABASE CONNECTION REQUIRED TO VIEW HISTORY.</p>
           </div>
         )}
 
         {!loading && !error && items.length === 0 && (
-          <div className="text-center py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <p className="text-neutral-500">No roasts yet. Go roast a room!</p>
+          <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_#111]">
+            <p className="font-bold uppercase">NO DATA FOUND.</p>
+            <p className="font-mono text-sm text-gray-600">INITIATE A NEW ROAST TO POPULATE THIS LOG.</p>
           </div>
         )}
 
-        <div className="space-y-4">
-          {items.map((item, i) => (
-            <motion.div
+        <div className="space-y-8">
+          {items.map((item) => (
+            <div
               key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-              className="rounded-2xl p-5 bg-white/[0.03] border border-white/[0.06]
-                         hover:bg-white/[0.04] transition-colors duration-300"
+              className="border-4 border-black bg-white shadow-[6px_6px_0px_0px_#111] p-6 relative"
             >
-              <div className="flex items-start justify-between mb-3">
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5
-                                  rounded-full border ${modeColors[item.mode] || ""}`}>
-                  {item.mode}
+              <div className="absolute top-0 right-0 border-l-4 border-b-4 border-black px-3 py-1 font-mono font-bold text-sm bg-gray-100">
+                {new Date(item.created_at).toLocaleDateString()}
+              </div>
+
+              <div className="mb-4">
+                <span className={`px-2 py-1 font-bold text-xs uppercase border-2 border-black ${modeColors[item.mode] || "bg-white"}`}>
+                  MODE: {item.mode}
                 </span>
-                <span className="text-xs text-neutral-600">
-                  {new Date(item.created_at).toLocaleDateString()}
+                <span className="ml-3 font-mono font-bold text-sm bg-black text-white px-2 py-1">
+                  DAMAGE: {item.scores.overall_disaster}/10
                 </span>
               </div>
-              <p className="text-neutral-300 text-sm leading-relaxed mb-3">{item.roast_text}</p>
-              <div className="flex items-center justify-between text-xs text-neutral-600">
-                <div className="flex items-center gap-1">
-                  <AlertTriangle size={12} className="text-red-400" />
-                  <span className="text-red-400 font-medium">{item.worst_offender}</span>
-                </div>
-                <span>💥 {item.overall_disaster}/10</span>
+
+              <p className="text-lg font-medium leading-relaxed mb-6">{item.roast}</p>
+              
+              <div className="flex items-center gap-2 border-2 border-black bg-[#ffcc00] p-3 inline-flex">
+                <AlertTriangle size={18} strokeWidth={3} className="text-black" />
+                <span className="font-bold text-sm uppercase">WORST OFFENDER:</span>
+                <span className="font-mono text-sm bg-white border border-black px-2 py-0.5 font-bold">
+                  {item.worst_offender}
+                </span>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
