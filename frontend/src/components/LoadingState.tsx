@@ -1,100 +1,110 @@
 /**
- * LoadingState — Animated loading screen with rotating messages.
+ * LoadingState — Cinematic loading with stages and ambient glow.
  */
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame } from "lucide-react";
+import type { RoastStage } from "../types";
 
-interface LoadingStateProps {
-  statusMessage?: string;
-  stage?: string;
+interface LoadingProps {
+  statusMessage: string;
+  stage: RoastStage;
 }
 
-const loadingMessages = [
+const funMessages = [
   "analyzing your life choices...",
   "consulting interior design lawyers...",
-  "preparing emotional support...",
-  "measuring the chaos...",
-  "judging your taste quietly...",
-  "contacting HGTV for an intervention...",
-  "calculating furniture crimes...",
-  "evaluating your lighting sins...",
-  "searching for redeeming qualities...",
-  "drafting a strongly worded letter...",
+  "measuring the disappointment levels...",
+  "cross-referencing with IKEA crime database...",
+  "preparing emotional support animals...",
+  "calculating therapy costs...",
 ];
 
-export function LoadingState({ statusMessage, stage }: LoadingStateProps) {
-  const [messageIndex, setMessageIndex] = useState(0);
+const stages = [
+  { key: "analyzing", label: "Scanning", progress: 33 },
+  { key: "roasting", label: "Roasting", progress: 66 },
+  { key: "scoring", label: "Scoring", progress: 100 },
+];
+
+export function LoadingState({ statusMessage, stage }: LoadingProps) {
+  const [messageIdx, setMessageIdx] = useState(0);
 
   useEffect(() => {
-    if (statusMessage) return;
-
     const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+      setMessageIdx((i) => (i + 1) % funMessages.length);
     }, 2500);
-
     return () => clearInterval(interval);
-  }, [statusMessage]);
+  }, []);
 
-  const displayMessage = statusMessage || loadingMessages[messageIndex];
+  const currentProgress = stages.find((s) => s.key === stage)?.progress ?? 20;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col items-center justify-center py-16"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex flex-col items-center py-16"
     >
-      {/* Pulsing fire animation */}
+      {/* Pulsing flame icon */}
       <motion.div
         className="relative mb-8"
-        animate={{
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="absolute inset-0 blur-2xl bg-orange-500/30 rounded-full" />
-        <Flame size={64} className="text-orange-500 relative z-10" />
+        <Flame size={56} className="text-orange-500 relative z-10" />
+        <motion.div
+          className="absolute inset-0 bg-orange-500/20 rounded-full blur-2xl scale-[3]"
+          animate={{ opacity: [0.3, 0.6, 0.3], scale: [2.5, 3.5, 2.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
       </motion.div>
 
-      {/* Stage indicator */}
-      {stage && (
-        <div className="flex items-center gap-2 mb-4">
-          {["analyzing", "roasting", "scoring"].map((s, i) => (
-            <motion.div
-              key={s}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                s === stage
-                  ? "w-8 bg-orange-500"
-                  : ["analyzing", "roasting", "scoring"].indexOf(stage) > i
-                    ? "w-6 bg-orange-500/50"
-                    : "w-4 bg-neutral-700"
+      {/* Status message */}
+      <div className="h-8 mb-8 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={messageIdx}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3 }}
+            className="text-neutral-400 text-sm font-medium text-center"
+          >
+            {statusMessage || funMessages[messageIdx]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-64 relative">
+        <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+            initial={{ width: "0%" }}
+            animate={{ width: `${currentProgress}%` }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+
+        {/* Stage labels */}
+        <div className="flex justify-between mt-3">
+          {stages.map((s) => (
+            <span
+              key={s.key}
+              className={`text-[10px] font-semibold uppercase tracking-wider ${
+                stage === s.key
+                  ? "text-orange-400"
+                  : currentProgress >= s.progress
+                    ? "text-neutral-400"
+                    : "text-neutral-700"
               }`}
-              animate={s === stage ? { opacity: [0.5, 1, 0.5] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            />
+            >
+              {s.label}
+            </span>
           ))}
         </div>
-      )}
-
-      {/* Rotating message */}
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={displayMessage}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3 }}
-          className="text-neutral-400 text-lg font-medium italic"
-        >
-          {displayMessage}
-        </motion.p>
-      </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
