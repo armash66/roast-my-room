@@ -14,6 +14,7 @@ from typing import AsyncGenerator
 
 from google import genai
 from google.genai import types
+from google.genai.types import HarmCategory, HarmBlockThreshold
 
 from app.config import get_settings
 from app.models.schemas import (
@@ -142,7 +143,7 @@ class GeminiService:
                             role="user",
                             parts=[
                                 types.Part.from_bytes(data=image_data, mime_type=media_type),
-                                types.Part.from_text("Analyze this room image. Return STRICT JSON only."),
+                                types.Part.from_text(text="Analyze this room image. Return STRICT JSON only."),
                             ],
                         )
                     ],
@@ -150,6 +151,21 @@ class GeminiService:
                         system_instruction=STAGE_1_SYSTEM,
                         max_output_tokens=self.max_tokens,
                         temperature=0.3,
+                        response_mime_type="application/json",
+                        safety_settings=[
+                            types.SafetySetting(
+                                category=HarmCategory.HARM_CATEGORY_HARASSMENT,
+                                threshold=HarmBlockThreshold.BLOCK_NONE,
+                            ),
+                            types.SafetySetting(
+                                category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                                threshold=HarmBlockThreshold.BLOCK_NONE,
+                            ),
+                            types.SafetySetting(
+                                category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                                threshold=HarmBlockThreshold.BLOCK_NONE,
+                            ),
+                        ],
                     ),
                 )
 
@@ -162,9 +178,9 @@ class GeminiService:
                 return analysis
 
             except json.JSONDecodeError as e:
-                logger.warning(f"Stage 1 JSON parse failed (attempt {attempt + 1}): {e}")
+                logger.warning(f"Stage 1 JSON parse failed (attempt {attempt + 1}): {e}. Raw text was: {repr(raw_text)}")
                 if attempt == 2:
-                    raise ValueError(f"Stage 1 failed after 3 attempts: invalid JSON from Gemini") from e
+                    raise ValueError(f"Stage 1 failed after 3 attempts: invalid JSON. Raw output: {repr(raw_text)}") from e
             except Exception as e:
                 logger.error(f"Stage 1 error (attempt {attempt + 1}): {e}")
                 if attempt == 2:
@@ -197,7 +213,7 @@ class GeminiService:
                             role="user",
                             parts=[
                                 types.Part.from_text(
-                                    f"Here is the room analysis:\n{analysis_json}\n\nGenerate the roast. Return STRICT JSON only."
+                                    text=f"Here is the room analysis:\n{analysis_json}\n\nGenerate the roast. Return STRICT JSON only."
                                 ),
                             ],
                         )
@@ -206,6 +222,7 @@ class GeminiService:
                         system_instruction=system_prompt,
                         max_output_tokens=self.max_tokens,
                         temperature=0.8,
+                        response_mime_type="application/json",
                     ),
                 )
 
@@ -218,9 +235,9 @@ class GeminiService:
                 return result
 
             except json.JSONDecodeError as e:
-                logger.warning(f"Stage 2 JSON parse failed (attempt {attempt + 1}): {e}")
+                logger.warning(f"Stage 2 JSON parse failed (attempt {attempt + 1}): {e}. Raw text was: {repr(raw_text)}")
                 if attempt == 2:
-                    raise ValueError("Stage 2 failed: invalid JSON from Gemini") from e
+                    raise ValueError(f"Stage 2 failed: invalid JSON. Raw output: {repr(raw_text)}") from e
             except Exception as e:
                 logger.error(f"Stage 2 error (attempt {attempt + 1}): {e}")
                 if attempt == 2:
@@ -260,13 +277,14 @@ class GeminiService:
                 contents=[
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_text(validation_prompt)],
+                        parts=[types.Part.from_text(text=validation_prompt)],
                     )
                 ],
                 config=types.GenerateContentConfig(
                     system_instruction="You are a quality validator. Return ONLY valid JSON.",
                     max_output_tokens=self.max_tokens,
                     temperature=0.3,
+                    response_mime_type="application/json",
                 ),
             )
 
@@ -394,13 +412,14 @@ Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reaso
                 contents=[
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_text(battle_prompt)],
+                        parts=[types.Part.from_text(text=battle_prompt)],
                     )
                 ],
                 config=types.GenerateContentConfig(
                     system_instruction=BATTLE_SYSTEM,
                     max_output_tokens=512,
                     temperature=0.5,
+                    response_mime_type="application/json",
                 ),
             )
             raw_text = response.text.strip()
@@ -428,15 +447,14 @@ Which room is the bigger disaster? Return JSON with "winner" (1 or 2) and "reaso
 
     @staticmethod
     def _strip_code_fences(text: str) -> str:
-        """Remove markdown code fences that Gemini sometimes adds."""
+        """Extract the JSON object from the text, ignoring conversational wrappers."""
         text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        return text.strip()
+        # Find the first { and the last }
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+            return text[start_idx:end_idx+1]
+        return text
 
 
 # Singleton instance
