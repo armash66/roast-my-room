@@ -1,5 +1,5 @@
 /**
- * ScoreBoard — Animated score bars for chaos, furniture crime, lighting sin, overall disaster.
+ * ScoreBoard — Animated score bars with gradient fills and staggered reveals.
  */
 
 import { motion } from "framer-motion";
@@ -9,138 +9,104 @@ interface ScoreBoardProps {
   scores: RoastScores;
 }
 
-const scoreConfig = [
-  {
-    key: "chaos_level" as const,
-    label: "Chaos Level",
-    emoji: "🌪️",
-    gradient: "from-yellow-500 to-orange-500",
-    bg: "bg-yellow-500/10",
-  },
-  {
-    key: "furniture_crime" as const,
-    label: "Furniture Crime",
-    emoji: "🪑",
-    gradient: "from-orange-500 to-red-500",
-    bg: "bg-orange-500/10",
-  },
-  {
-    key: "lighting_sin" as const,
-    label: "Lighting Sin",
-    emoji: "💡",
-    gradient: "from-red-500 to-pink-500",
-    bg: "bg-red-500/10",
-  },
-  {
-    key: "overall_disaster" as const,
-    label: "Overall Disaster",
-    emoji: "☠️",
-    gradient: "from-pink-500 to-purple-500",
-    bg: "bg-pink-500/10",
-  },
+const scoreCategories: { key: keyof RoastScores; label: string; icon: string }[] = [
+  { key: "chaos_level", label: "Chaos Level", icon: "🌀" },
+  { key: "furniture_crime", label: "Furniture Crime", icon: "🪑" },
+  { key: "lighting_sin", label: "Lighting Sin", icon: "💡" },
+  { key: "overall_disaster", label: "Overall Disaster", icon: "💥" },
 ];
 
+function getScoreColor(score: number): string {
+  if (score >= 8) return "from-red-500 to-rose-600";
+  if (score >= 5) return "from-orange-500 to-amber-500";
+  return "from-emerald-500 to-teal-500";
+}
+
+function getVerdict(avg: number): { text: string; color: string } {
+  if (avg >= 8) return { text: "CONDEMNATION NOTICE ISSUED", color: "text-red-400" };
+  if (avg >= 6) return { text: "DEEPLY CONCERNING", color: "text-orange-400" };
+  if (avg >= 4) return { text: "ROOM NEEDS AN INTERVENTION", color: "text-amber-400" };
+  return { text: "SURPRISINGLY DECENT", color: "text-emerald-400" };
+}
+
 export function ScoreBoard({ scores }: ScoreBoardProps) {
+  const avg =
+    (scores.chaos_level + scores.furniture_crime + scores.lighting_sin + scores.overall_disaster) / 4;
+  const verdict = getVerdict(avg);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-      className="w-full"
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] space-y-5"
     >
-      <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-6">
-        <h3 className="text-neutral-400 text-sm font-semibold uppercase tracking-wider mb-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
           Damage Report
         </h3>
-
-        <div className="space-y-5">
-          {scoreConfig.map((config, index) => {
-            const value = scores[config.key];
-            const percentage = (value / 10) * 100;
-
-            return (
-              <motion.div
-                key={config.key}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * index + 0.3 }}
-              >
-                {/* Label row */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{config.emoji}</span>
-                    <span className="text-neutral-300 font-medium text-sm">
-                      {config.label}
-                    </span>
-                  </div>
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      delay: 0.5 + 0.1 * index,
-                      type: "spring",
-                      stiffness: 400,
-                    }}
-                    className={`
-                      text-lg font-black tabular-nums
-                      ${value >= 8 ? "text-red-400" : value >= 5 ? "text-orange-400" : "text-yellow-400"}
-                    `}
-                  >
-                    {value}/10
-                  </motion.span>
-                </div>
-
-                {/* Bar */}
-                <div className={`h-3 rounded-full ${config.bg} overflow-hidden`}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    transition={{
-                      duration: 1,
-                      delay: 0.4 + 0.15 * index,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                    className={`h-full rounded-full bg-gradient-to-r ${config.gradient} relative`}
-                  >
-                    {/* Shimmer effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{ x: ["-100%", "200%"] }}
-                      transition={{
-                        duration: 2,
-                        delay: 1 + 0.15 * index,
-                        repeat: Infinity,
-                        repeatDelay: 3,
-                      }}
-                    />
-                  </motion.div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Overall verdict */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="mt-6 pt-4 border-t border-neutral-800 text-center"
-        >
-          <span className="text-neutral-500 text-sm">Verdict: </span>
-          <span className="text-lg font-bold">
-            {getVerdict(scores.overall_disaster)}
-          </span>
-        </motion.div>
+        <span className="text-xs font-bold text-neutral-600">
+          AVG: {avg.toFixed(1)}/10
+        </span>
       </div>
+
+      <div className="space-y-4">
+        {scoreCategories.map((cat, i) => {
+          const score = scores[cat.key];
+          const gradient = getScoreColor(score);
+
+          return (
+            <motion.div
+              key={cat.key}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{cat.icon}</span>
+                  <span className="text-sm font-medium text-neutral-300">{cat.label}</span>
+                </div>
+                <motion.span
+                  className="text-sm font-bold text-white tabular-nums"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.1 + 0.3 }}
+                >
+                  {score}/10
+                </motion.span>
+              </div>
+
+              <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full bg-gradient-to-r ${gradient} rounded-full relative`}
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${score * 10}%` }}
+                  transition={{ delay: i * 0.1 + 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {/* Shimmer overlay */}
+                  <div className="absolute inset-0 shimmer" />
+                </motion.div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Verdict */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="pt-3 border-t border-white/[0.06] text-center"
+      >
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 mb-1">
+          Verdict
+        </p>
+        <p className={`text-sm font-extrabold ${verdict.color} tracking-wide`}>
+          {verdict.text}
+        </p>
+      </motion.div>
     </motion.div>
   );
-}
-
-function getVerdict(score: number): string {
-  if (score >= 9) return "🏚️ Condemnation Notice Issued";
-  if (score >= 7) return "🚨 FEMA Has Been Notified";
-  if (score >= 5) return "😬 Questionable At Best";
-  if (score >= 3) return "🤷 Could Be Worse...";
-  return "✨ Surprisingly Decent";
 }

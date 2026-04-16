@@ -1,10 +1,9 @@
 /**
- * RoastDisplay — Renders the roast text with typewriter effect.
- * Highlights the worst offender in red/bold.
+ * RoastDisplay — Dramatic roast text reveal with typewriter cursor and worst offender callout.
  */
 
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Quote } from "lucide-react";
 
 interface RoastDisplayProps {
   text: string;
@@ -17,15 +16,12 @@ export function RoastDisplay({ text, worstOffender, isStreaming }: RoastDisplayP
   const renderText = () => {
     if (!worstOffender || !text) return text;
 
-    const regex = new RegExp(`(${escapeRegex(worstOffender)})`, "gi");
+    const regex = new RegExp(`(${worstOffender.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
     const parts = text.split(regex);
 
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <span
-          key={i}
-          className="text-red-400 font-bold underline decoration-red-500/50 decoration-2 underline-offset-2"
-        >
+        <span key={i} className="text-red-400 font-bold underline decoration-red-500/50 underline-offset-2">
           {part}
         </span>
       ) : (
@@ -38,16 +34,13 @@ export function RoastDisplay({ text, worstOffender, isStreaming }: RoastDisplayP
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full"
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="space-y-4"
     >
-      {/* Roast text */}
-      <div className="relative rounded-2xl bg-neutral-900 border border-neutral-800 p-6 mb-4">
-        <div className="absolute -top-3 left-4 px-3 py-0.5 bg-orange-500 rounded-full text-xs font-bold text-white uppercase tracking-wider">
-          The Roast
-        </div>
-
-        <p className="text-neutral-200 text-lg leading-relaxed mt-2 font-medium">
+      {/* Roast text card */}
+      <div className="relative rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06]">
+        <Quote size={20} className="text-orange-500/30 mb-3" />
+        <p className="text-neutral-200 text-lg leading-relaxed font-medium">
           {renderText()}
           {isStreaming && (
             <motion.span
@@ -64,22 +57,20 @@ export function RoastDisplay({ text, worstOffender, isStreaming }: RoastDisplayP
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="flex items-center gap-3 px-4 py-3 bg-red-950/40 border border-red-900/50 rounded-xl"
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="flex items-start gap-3 p-4 rounded-xl bg-red-500/[0.06] border border-red-500/[0.12]"
         >
-          <AlertTriangle size={20} className="text-red-500 flex-shrink-0" />
+          <div className="p-1.5 rounded-lg bg-red-500/10 mt-0.5">
+            <AlertTriangle size={16} className="text-red-400" />
+          </div>
           <div>
-            <span className="text-red-400 text-xs font-semibold uppercase tracking-wider">
+            <p className="text-[11px] font-semibold text-red-400/70 uppercase tracking-wider mb-0.5">
               Worst Offender
-            </span>
-            <p className="text-red-300 font-bold">{worstOffender}</p>
+            </p>
+            <p className="text-red-300 font-bold text-sm">{worstOffender}</p>
           </div>
         </motion.div>
       )}
     </motion.div>
   );
-}
-
-function escapeRegex(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
